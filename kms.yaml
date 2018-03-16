@@ -1,0 +1,57 @@
+---
+Metadata:
+  License: GNU General Public License v3.0
+AWSTemplateFormatVersion: '2010-09-09'
+
+Parameters:
+  EnvNameParam:
+    Description: "Example 'dev' or 'prod' switch,
+    determines which settings are passed to userdata."
+    Type: String
+    Default: dev
+    AllowedValues:
+      - dev
+      - prod
+  ServiceUserArnParam:
+    Description: Key's service user
+    Type: String
+
+Resources:
+  testKey:
+    Type: "AWS::KMS::Key"
+    Properties:
+      Description: "Test key"
+      KeyPolicy:
+        Statement:
+          -
+            Sid: "Allow administration of the key"
+            Effect: "Allow"
+            Principal:
+              AWS: !Join
+                - ''
+                - - 'arn:aws:iam::'
+                  - !Ref 'AWS::AccountId'
+                  - ':root'
+            Action:
+              - "kms:*"
+            Resource: "*"
+          -
+            Sid: "Allow use of the key"
+            Effect: "Allow"
+            Principal:
+              AWS: !Ref ServiceUserArnParam
+            Action:
+              - "kms:Decrypt"
+            Resource: "*"
+
+  testAlias:
+    Type: "AWS::KMS::Alias"
+    Properties:
+      AliasName: !Join
+        - ''
+        - - 'alias/'
+          - !Ref 'EnvNameParam'
+          - '-'
+          - 'testKey'
+      TargetKeyId:
+        Ref: testKey
